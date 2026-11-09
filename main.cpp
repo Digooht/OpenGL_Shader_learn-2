@@ -39,7 +39,7 @@ void prepareSingleBuffer() {
 	//创建索引
 	unsigned int indices[] =
 	{
-		0,1,2//三个顶点
+		0, 1, 2//三个顶点
 	};
 
 
@@ -59,7 +59,30 @@ void prepareSingleBuffer() {
 	glGenVertexArrays(1, &vao);//创建1个vao
 	glBindVertexArray(vao);//绑定
 
+	//3 EBO创建与绑定（必须在绑定VAO之后：EBO的绑定属于VAO的状态）
+	GLuint ebo;
+	glGenBuffers(1, &ebo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+
 	//4 分别将位置/颜色属性的描述信息加入vao当中
+		//4.1描述位置属性
+	glBindBuffer(GL_ARRAY_BUFFER, posVbo);//只有绑定了posVbo，下面的属性描述才会与此vbo相关
+	glEnableVertexAttribArray(0);//启用0号位置上的vao，用来装pos
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);//填入数据
+
+	//4.2 描述颜色属性
+	glBindBuffer(GL_ARRAY_BUFFER, colorVbo);//绑定colorVbo
+	glEnableVertexAttribArray(1);//启用vao2号位置，用来装color
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);//填入数据
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);//不允许省略，负责查找当前vbo
+
+	//注意：core profile 里 glBindVertexArray(0) 是非法的，这里不回绑0
+}
+
+/*//4 分别将位置/颜色属性的描述信息加入vao当中
 	//4.1描述位置属性
 	glBindBuffer(GL_ARRAY_BUFFER, posVbo);//只有绑定了posVbo，下面的属性描述才会与此vbo相关
 	glEnableVertexAttribArray(0);//启用0号位置上的vao，用来装pos
@@ -72,7 +95,7 @@ void prepareSingleBuffer() {
 
 	glBindVertexArray(0);//解绑vao（ds说是防御性措施）
 }
-
+*/
 
 /*void prepareInterleavedBuffer() {
 	//1 准备好Interleaved数据（位置+颜色）
@@ -117,11 +140,11 @@ void prepareShader() {
 		"#version 460 core\n"
 		"layout (location = 0) in vec3 aPos;\n"//传入vao0号位置信息
 		"layout (location = 1) in vec3 aColor;\n"//传入vao1号颜色信息
-		"out vec3 color"//我们要输出的是color给fs
+		"out vec3 color;\n"//我们要输出的是color给fs
 		"void main()\n"
 		"{\n"
 		"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"//输出顶点
-		"	color = acolor;\n"//输出color给fs
+		"	color = aColor;\n"//输出color给fs
 		"}\0";
 	const char* fragmentShaderSource =
 		"#version 460 core\n"
@@ -194,7 +217,7 @@ void render() {
 	//2 绑定vao
 	GL_CALL(glBindVertexArray(vao));
 	//3 执行绘制命令 三角形 从第零个顶点开始画 绘制3个顶点
-	glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+	GL_CALL(glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0));
 
 	//4 核心模式下 VAO 0 不是合法对象，不能解绑到0，这里直接保留绑定
 }
